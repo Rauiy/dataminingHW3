@@ -15,8 +15,10 @@ public class flajoletmartin {
             BufferedReader br = new BufferedReader(new FileReader(filename));
             String line;
             while((line = br.readLine()) != null){
-                System.out.println("Estimate: " + fm(line));
+                fm(line);
+                //System.out.println("Estimate: " + fm(line));
             }
+            System.out.println("Estimated distinct: " + estimate(max));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
