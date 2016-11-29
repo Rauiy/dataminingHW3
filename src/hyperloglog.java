@@ -157,4 +157,15 @@ public class hyperloglog{
                 return 0.7213/(1+1.079/M.length); //Estimation
         }
     }
+
+    public int[] union(int[] M, int[] N){
+        for(int i = 0; i < N.length; i++){
+            M[i] = Math.max(M[i], N[i]);
+        }
+        return M;
+    }
+
+    public void hyperBall(){
+
+    }
 }
