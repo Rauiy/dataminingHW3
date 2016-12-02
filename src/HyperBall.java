@@ -46,7 +46,7 @@ public class HyperBall {
                     a = union(a, c[w.id]);  // unify current node hll counter with neighbours hll counter
 
                     // look for change
-                    changed = a.equals(c[v.id]); //!compare(a, c[v.id]);
+                    changed = !compare(a, c[v.id]);
                 }
                 recent[v.id] = a; // temporarily save the new hll counter
             }
@@ -56,7 +56,7 @@ public class HyperBall {
 
             t++; // increment radius counter
         }
-
+        t--;
         return new retHb(c, t);
     }
 

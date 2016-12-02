@@ -50,7 +50,8 @@ public class Hyperloglog{
         }*/
 
         HyperBall.retHb rHb = hb.hyperBall(rHll.c, rHll.nodes);
-        int[][] sol = rHb.c;
+
+        /*int[][] sol = rHb.c;
         int m = (int) Math.pow(2,b);
         for(int i=1; i < max+1; i++){
             for(int j = 0; j < m; j++){
@@ -60,7 +61,7 @@ public class Hyperloglog{
                     System.out.print("-" + " ");
             }
             System.out.println();
-        }
+        }*/
 
         System.out.println("Max radius: " + rHb.t);
 
