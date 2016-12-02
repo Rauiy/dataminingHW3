@@ -1,15 +1,7 @@
-/README.actor-movie
-/out.actor-movie
-/meta.actor-movie
 /dataminingHW3.iml
 /out
 /.idea
 # Created by .ignore support plugin (hsz.mobi)
 
-/meta.actor-collaboration
-/README.actor-collaboration
-/out.actor-collaboration
-/out.com-amazon
-/out.moreno_train_train
-/something.out
-/out.ego-twitter
+
+/out.actor-movie
