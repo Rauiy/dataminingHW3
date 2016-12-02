@@ -157,6 +157,11 @@ public class hyperloglog{
         return M;
     }
 
+    public int findCentrality(){
+
+        return 0;
+    }
+
     public int address(int hash){
         return (hash >> (bits))&mask; // 3 = 0b11
     }
