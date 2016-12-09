@@ -1,9 +1,10 @@
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import sun.misc.BASE64Encoder;
+
+import java.io.*;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Created by Steven on 2016-11-24.
@@ -11,9 +12,10 @@ import java.util.Map;
 
 
 public class Hyperloglog{
-    static final int b = 3, bits = 32-b;
-    static int mask = 3, rmask = 1073741823;; // The amount of bits we use
-
+    static int b = 4, bits = 32-b;
+    static int mask = 3, rmask = 1073741823; // The amount of bits we use
+    static String filename = "out.maayan-Stelzl";
+    static boolean leading = false;
     public class retHll{
 
 
@@ -26,9 +28,41 @@ public class Hyperloglog{
         public Map<?,Node> nodes;
     }
 
+
+
     public static void main(String[] args){
 
 
+
+        for(String arg: args){
+            if(arg.contains("=")) {
+
+                String[] s = arg.split("=");
+                switch(s[0]){
+                    case "b":
+                        System.out.println("Argument b found");
+                        b = Integer.parseInt(s[1]);
+                        bits = 32 - b;
+                        break;
+                    case "f":
+                    case "file":
+                    case "filename":
+                        System.out.println("Argument filename found");
+                        filename = s[1];
+                        break;
+                    default:
+                        System.out.println("Wrong input type: " + s[0] + " doesn't exist");
+                }
+
+            }
+            else if(arg.equals("leading"))
+                leading = true;
+        }
+
+        if(leading)
+            System.out.println("Using leading bits for hyperloglog");
+        else
+            System.out.println("Using trailing bits for hyperloglog");
 
         mask = 0;
         for(int i = 0; i < b;i++)
@@ -39,7 +73,11 @@ public class Hyperloglog{
 
         Hyperloglog hll = new Hyperloglog();
         HyperBall hb = new HyperBall();
-        retHll rHll = hll.streamFile("out.actor-movie");
+
+
+        System.out.println("Generating hyperloglog counters");
+
+        retHll rHll = hll.streamFile(filename);
 
         /*int m = (int)Math.pow(2,b);
         for(int i=1; i < max+1; i++){
@@ -49,11 +87,12 @@ public class Hyperloglog{
             System.out.println();
         }*/
 
+        System.out.println("Generating hyperball counters");
         HyperBall.retHb rHb = hb.hyperBall(rHll.c, rHll.nodes);
-
-        /*int[][] sol = rHb.c;
+        int[] res = hll.analyze(rHb.c);
+        int[][] sol = rHb.c;
         int m = (int) Math.pow(2,b);
-        for(int i=1; i < max+1; i++){
+        /*for(int i=1; i < max+1; i++){
             for(int j = 0; j < m; j++){
                 if(sol[i][j] > 0)
                     System.out.print(sol[i][j] + " ");
@@ -64,7 +103,17 @@ public class Hyperloglog{
         }*/
 
         System.out.println("Max radius: " + rHb.t);
-
+        System.out.print("Estimation: " + res[0]);
+        System.out.println(" Node id: " + res[1]);
+        //System.out.println(" Node degree: " + rHll.nodes.get(res[1]).nodes.size());
+        int i = res[1];
+        for(int j = 0; j < m; j++){
+            if(sol[i][j] > 0)
+                System.out.print(sol[i][j] + " ");
+            else
+                System.out.print("-" + " ");
+        }
+        System.out.println();
     }
 
     static int max = 0;
@@ -136,11 +185,27 @@ public class Hyperloglog{
         return M;
     }
 
+    static BASE64Encoder enc = new BASE64Encoder();
+
+    public static String base64encode(String text) {
+        return enc.encode(text.getBytes());
+    }//base64encode
+
     /* Adding one single item to counters */
     public int[] add(int[] M, String item){
-        int x = item.hashCode();
-        int j = addressR(x); // addressR takes the rightmost b bits from the input x, remove the capital R for leftmost
-        int b = rR(x,bits); // rR counts the trailing rightmost zeros from the input x exclusive the rightmost b bits, remove the capital R for leftmost
+        String e = base64encode(item); // Encrypt it first to make it uniformed when we hash it
+        int x = e.hashCode();//*4711;//15487403;
+        //hashes[Integer.parseInt(item)];
+        //System.out.println("Encrypted: " + e + " Hashcode: " + x);
+        int[] tmp;
+
+        if(leading)
+            tmp = leading(x, bits); // use the leftmost bits
+        else
+            tmp = trailing(x,bits); // use the rightmost x bits
+
+        int j = tmp[0];
+        int b = tmp[1];
 
         M[j] = Math.max(b,M[j]); // Compare old value with the new value for the bucket j
 
@@ -172,6 +237,14 @@ public class Hyperloglog{
         return bits - Integer.toBinaryString(hash).length() + 1;
     }
 
+    public int[] leading(int x, int bits){
+        return new int[]{address(x), r(x,bits)};
+    }
+
+    public int[] trailing(int x, int bits){
+        return new int[]{addressR(x), rR(x,bits)};
+    }
+
     /* Get the address according to the b rightmost bits */
     public int addressR(int hash){
         return (hash&mask); // 3 = 0b11
@@ -190,10 +263,32 @@ public class Hyperloglog{
         return i;
     }
 
+    int[] analyze(int[][] c){
+        double max = 0;
+        int index = -1;
+        for(int i = 1; i < c.length; i++){
+            double tmp = size(c[i]);
+
+            if(tmp > max) {
+                //System.out.println(tmp + " compares to " + max);
+                max = tmp;
+                index = i;
+            }
+        }
+
+        return new int[]{(int)max, index};
+    }
+
     /* Used to calculate the normalized harmonic mean */
     public double size(int[] M){
-        double alfa = alfa(M); // Get the alfa, i.e. a constant depending on the amount of buckets used
-        double p = M.length; // the amount of buckets used, i.e. m in some papers
+        int n = 0;//M.length;
+        /* To prevent empty buckets from disturbing the real value too much*/
+        for(int i: M)
+            if(i > 0)
+                n++;
+
+        double alfa = alfa(n); // Get the alfa, i.e. a constant depending on the amount of buckets used
+        double p = n; // the amount of buckets used, i.e. m in some papers
 
         // The formula used in the papers, alfa * p^2 * Z
         return alfa*p*p*sum(M);
@@ -206,18 +301,21 @@ public class Hyperloglog{
             sum+=(Math.pow(2,-i));
 
         // 1/Z so we can use it to multiple for our formula
+        if(sum == 0)
+            return 1;
+        //System.out.println(1/sum);
         return 1/sum;
     }
 
-    public double alfa(int[] M){
+    public double alfa(int n){
         /* Estimation or precalculated alfas*/
-        switch (M.length){
+        switch (n){
             case(2): return 1/(2*1.42371);
             case(4): return 0.532434;
             case(8): return 0.635576;
             case(16): return 0.673;
             default:
-                return 0.7213/(1+1.079/M.length); //Estimations
+                return 0.7213/(1+1.079/n); //Estimations
         }
     }
 }
