@@ -194,7 +194,7 @@ public class Hyperloglog{
     /* Adding one single item to counters */
     public int[] add(int[] M, String item){
         String e = base64encode(item); // Encrypt it first to make it uniformed when we hash it
-        int x = e.hashCode();//*4711;//15487403;
+        int x = e.hashCode()*4711;//15487403;
         //hashes[Integer.parseInt(item)];
         //System.out.println("Encrypted: " + e + " Hashcode: " + x);
         int[] tmp;
